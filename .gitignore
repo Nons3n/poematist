@@ -1,5 +1,49 @@
+# Variables de entorno (se suben solo las plantillas .env.example)
+.env
+.env.*
+!.env.example
+
+# Python / backend
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+
+# Bases de datos locales
+*.db
+*.sqlite
+*.sqlite3
+
+# Node / Expo
 node_modules/
 .expo/
-.venv/
-__pycache__/
-.env
+dist/
+web-build/
+expo-env.d.ts
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Builds nativos (expo prebuild) y firmas
+mobile/android/
+mobile/ios/
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# Editores y sistema operativo
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log

@@ -8,7 +8,23 @@
     "splash": {
       "backgroundColor": "#F6F1E8"
     },
-    "ios": { "supportsTablet": true },
-    "android": { "adaptiveIcon": { "backgroundColor": "#F6F1E8" } }
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#F6F1E8"
+      }
+    },
+    "plugins": [
+      "expo-status-bar",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Permite usar la cámara para fotografiar citas de tus libros.",
+          "photosPermission": "Permite elegir fotos de páginas para transcribir citas."
+        }
+      ]
+    ]
   }
 }
