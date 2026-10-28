@@ -1,117 +1,142 @@
 # Banda Sonora Literaria
 
-Gestor de citas literarias con IA: organiza fragmentos de tus libros, captúralos con la cámara (OCR) y recibe una "Banda Sonora Literaria" según su tono emocional.
+Aplicación móvil para guardar y organizar citas de libros. Permite capturar fragmentos con la cámara mediante OCR, editarlos antes de guardarlos y, en próximas versiones, analizar su tono emocional para recomendar una "Banda Sonora Literaria".
 
-## Qué funciona hoy
+## Funcionalidades
 
-- **Biblioteca:** lista las citas guardadas en la API (más recientes primero). Si la API no responde, muestra citas de ejemplo y lo avisa.
-- **Cita desde foto:** tomar foto o elegirla de la galería, recortarla, transcribirla con OCR y **editar el texto antes de guardarlo** (dejar solo el fragmento que interesa). Luego se asocia a un libro existente o nuevo y a una página.
-- **API:** CRUD de libros y citas sobre SQLite, OCR con Tesseract y contrato del análisis con IA (aún sin LLM conectado).
-- El texto de las citas se muestra siempre en cursiva.
+| Módulo | Estado |
+| --- | --- |
+| Biblioteca de libros y citas (texto siempre en cursiva) | Disponible |
+| Captura de citas desde foto o galería con recorte y edición del texto antes de guardar | Disponible |
+| Análisis de sentimiento y Banda Sonora Literaria con LLM | Contrato de API definido; integración pendiente |
+| Feed, búsqueda avanzada y exportación de Quote Cards | Pendiente |
+| Almacenamiento local offline y sincronización | Pendiente |
+
+## Stack
+
+- **Móvil:** React Native con Expo SDK 58, Expo Image Picker y Expo File System.
+- **Backend:** Python, FastAPI y SQLModel.
+- **Base de datos:** SQLite en desarrollo; PostgreSQL en producción.
+- **OCR:** Tesseract.
 
 ## Estructura
 
 ```
-mobile/                     React Native + Expo (SDK 58)
-  App.js                    Cambio de pantallas por estado (temporal)
-  src/components/           QuoteCard, Button
-  src/screens/              LibraryScreen, OCREditorScreen
-  src/services/             apiClient, ocrService, iaService
-  src/database/             Almacenamiento local (por ahora, datos de muestra)
-  src/navigation/           Navegadores (pendiente)
+mobile/                     Aplicación React Native + Expo
+  App.js                    Punto de entrada y cambio de pantallas
+  src/components/           Componentes reutilizables (QuoteCard, Button)
+  src/screens/              Pantallas (LibraryScreen, OCREditorScreen)
+  src/services/             Clientes de la API (apiClient, ocrService, iaService)
+  src/database/             Almacenamiento local y datos de ejemplo
+  src/navigation/           Navegadores
   src/theme.js              Colores y tipografía
-backend/                    FastAPI
-  app/api/v1/routes/        books, quotes, ocr, ai
-  app/core/                 Configuración (.env) y conexión a base de datos
-  app/models/               Modelos SQLModel: Libro, Cita, AnalisisIA, BandaSonora
-  app/schemas/              Schemas Pydantic de request/response
-  app/services/             Lógica de negocio, OCR (Tesseract) y prompt del LLM
-  tests/                    Pruebas de la API (pytest)
+backend/                    API REST con FastAPI
+  app/api/v1/routes/        Endpoints: books, quotes, ocr, ai
+  app/core/                 Configuración y conexión a la base de datos
+  app/models/               Modelos ORM: Libro, Cita, AnalisisIA, BandaSonora
+  app/schemas/              Schemas de request/response
+  app/services/             Lógica de negocio, OCR y prompts del LLM
+  tests/                    Pruebas de la API
 ```
 
 ## Requisitos
 
-- Python 3.12+ y Node.js 20+.
-- [Tesseract OCR](#ocr-tesseract) con el idioma español.
-- En el celular, **Expo Go para SDK 58**, conectado a la misma red que la PC.
+- Python 3.12 o superior
+- Node.js 20 o superior
+- Tesseract OCR con el idioma español
+- Expo Go (SDK 58) en un dispositivo, o un emulador de Android/iOS
 
-> **Windows / PowerShell:** si sale "la ejecución de scripts está deshabilitada" al usar `npm` o activar el venv, ejecuta una vez
-> `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned` y vuelve a abrir la terminal (o usa CMD).
+### Instalar Tesseract
 
-## Iniciar la API
+| Sistema | Comando |
+| --- | --- |
+| Windows | `winget install UB-Mannheim.TesseractOCR` |
+| macOS | `brew install tesseract tesseract-lang` |
+| Debian/Ubuntu | `sudo apt install tesseract-ocr tesseract-ocr-spa` |
+
+Verifica que esté disponible el idioma `spa` con `tesseract --list-langs`. Si falta, descarga [`spa.traineddata`](https://github.com/tesseract-ocr/tessdata) y cópialo en la carpeta `tessdata` de la instalación.
+
+## Backend
 
 ```sh
 cd backend
 python -m venv .venv
-.venv\Scripts\activate            # macOS/Linux: source .venv/bin/activate
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements-dev.txt
-copy .env.example .env            # opcional (macOS/Linux: cp)
+cp .env.example .env             # Windows: copy .env.example .env
 uvicorn app.main:app --reload --host 0.0.0.0
 ```
 
-- Documentación interactiva: `http://127.0.0.1:8000/docs`. Comprobación rápida: `/health`.
-- `--host 0.0.0.0` es necesario para que el celular pueda conectarse. Si no conecta, revisa que el Firewall de Windows permita Python en redes privadas.
-- Por defecto usa SQLite (`backend/citas.db`). Para PostgreSQL instala `psycopg[binary]` y cambia `DATABASE_URL` en `.env`.
-- Pruebas: `pytest`.
+La API queda disponible en `http://localhost:8000`, con documentación interactiva en `/docs` y estado de salud en `/health`.
 
-### OCR (Tesseract)
+### Variables de entorno
 
-1. Instala Tesseract (desde cualquier carpeta):
-   ```sh
-   winget install UB-Mannheim.TesseractOCR
-   ```
-2. Si no trae español, descarga el idioma desde **PowerShell como administrador**:
-   ```powershell
-   Invoke-WebRequest -Uri "https://github.com/tesseract-ocr/tessdata/raw/main/spa.traineddata" -OutFile "C:\Program Files\Tesseract-OCR\tessdata\spa.traineddata"
-   ```
-3. Comprueba que aparezca `spa` (en PowerShell hace falta el `&`):
-   ```powershell
-   & "C:\Program Files\Tesseract-OCR\tesseract.exe" --list-langs
-   ```
+| Variable | Descripción | Valor por defecto |
+| --- | --- | --- |
+| `DATABASE_URL` | Cadena de conexión de SQLAlchemy | `sqlite:///./citas.db` |
+| `CORS_ORIGINS` | Orígenes permitidos (lista JSON) | `["*"]` |
+| `TESSERACT_CMD` | Ruta al ejecutable de Tesseract, si no está en el PATH | Detección automática |
+| `OCR_LANG` | Idiomas de Tesseract | `spa+eng` |
 
-El backend busca Tesseract en el PATH y en `C:\Program Files\Tesseract-OCR`. Si está en otro lugar, define `TESSERACT_CMD` en `.env`. El idioma se configura con `OCR_LANG` (por defecto `spa+eng`).
+Para usar PostgreSQL, instala `psycopg[binary]` y define `DATABASE_URL=postgresql+psycopg://usuario:clave@host:5432/citas`.
+
+### Pruebas
+
+```sh
+cd backend
+pytest
+```
 
 ### Endpoints
 
-| Método | Ruta | Estado |
+| Método | Ruta | Descripción |
 | --- | --- | --- |
-| GET, POST | `/api/v1/books` | Listo |
-| GET, PATCH, DELETE | `/api/v1/books/{id}` | Listo (borra también sus citas) |
-| GET, POST | `/api/v1/quotes` (filtros `libro_id`, `autor`, `q`) | Listo |
-| GET, PATCH, DELETE | `/api/v1/quotes/{id}` | Listo |
-| POST | `/api/v1/ocr/process` (multipart, campo `image`) | Listo (501 si Tesseract no está instalado) |
-| POST | `/api/v1/ai/analyze` | Contrato y prompt definidos, responde 501 |
+| `GET`, `POST` | `/api/v1/books` | Listar y crear libros |
+| `GET`, `PATCH`, `DELETE` | `/api/v1/books/{id}` | Consultar, editar y eliminar un libro (con sus citas) |
+| `GET`, `POST` | `/api/v1/quotes` | Listar citas (filtros `libro_id`, `autor`, `q`) y crearlas |
+| `GET`, `PATCH`, `DELETE` | `/api/v1/quotes/{id}` | Consultar, editar y eliminar una cita |
+| `POST` | `/api/v1/ocr/process` | Extraer texto de una imagen (`multipart/form-data`, campo `image`) |
+| `POST` | `/api/v1/ai/analyze` | Análisis de sentimiento y Banda Sonora Literaria (responde `501` hasta integrar el LLM) |
 
-## Iniciar la aplicación móvil
+## Aplicación móvil
 
 ```sh
 cd mobile
 npm install
-copy .env.example .env            # macOS/Linux: cp
-npx expo start -c
+cp .env.example .env             # Windows: copy .env.example .env
+npx expo start
 ```
 
-En `mobile/.env`, `EXPO_PUBLIC_API_URL` debe apuntar a la **IPv4 de la PC** donde corre la API, con el puerto 8000:
+Escanea el código QR con Expo Go o abre un emulador desde la consola de Expo.
 
-```
-EXPO_PUBLIC_API_URL=http://192.168.1.50:8000/api/v1
-```
+### Configuración
 
-- La IP se obtiene con `ipconfig` (adaptador Wi-Fi o Ethernet). No uses `127.0.0.1`: desde el celular apunta al propio celular.
-- En el emulador de Android usa `http://10.0.2.2:8000/api/v1`.
-- Tras cambiar `.env`, reinicia Expo con `npx expo start -c`.
-- Para comprobar la conexión, abre `http://TU_IP:8000/health` en el navegador del celular.
-- Si Expo Go dice que el proyecto es de otro SDK, actualiza Expo Go o alinea el proyecto con `npx expo install expo@^<versión> --fix`.
+`EXPO_PUBLIC_API_URL` en `mobile/.env` indica dónde está la API:
 
-### Notas técnicas
+| Entorno | Valor |
+| --- | --- |
+| Dispositivo físico | `http://<IP-del-equipo-con-la-API>:8000/api/v1` |
+| Emulador de Android | `http://10.0.2.2:8000/api/v1` |
+| Simulador de iOS / web | `http://localhost:8000/api/v1` |
 
-- La foto se sube con `uploadAsync` de `expo-file-system/legacy` porque el `fetch` de Expo SDK 58 no acepta el `FormData` con `{ uri }` de React Native ("Unsupported FormDataPart implementation").
-- Se usa `react-native-safe-area-context` en lugar del `SafeAreaView` de React Native, que está obsoleto.
+El dispositivo debe estar en la misma red que el equipo que ejecuta la API. Tras modificar `.env`, reinicia Expo con `npx expo start -c`.
 
-## Pendiente
+## Solución de problemas
 
-- Integrar el cliente LLM (`backend/app/services/ai.py`).
-- Navegación (React Navigation, Stack/Tabs), pantallas QuoteDetail y Feed.
+- **El dispositivo no se conecta a la API:** comprueba que la API se inició con `--host 0.0.0.0`, que el firewall permite el puerto 8000 y que `http://<IP>:8000/health` abre desde el navegador del dispositivo.
+- **"Project is incompatible with this version of Expo Go":** la versión de Expo Go no coincide con el SDK del proyecto. Actualiza Expo Go o alinea el proyecto con `npx expo install expo@^<SDK> --fix`.
+- **El OCR responde `501`:** Tesseract no está instalado, no se encuentra (define `TESSERACT_CMD`) o falta algún idioma de `OCR_LANG`.
+- **Windows: "la ejecución de scripts está deshabilitada" en PowerShell:** ejecuta `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned` o usa CMD.
+
+## Notas de desarrollo
+
+- Las fotos se suben con `uploadAsync` de `expo-file-system/legacy`, ya que el `fetch` de Expo SDK 58 no admite el `FormData` con `{ uri }` de React Native.
+- La navegación es un cambio de pantallas por estado en `App.js`; se reemplazará por React Navigation.
+
+## Hoja de ruta
+
+- Integrar el cliente LLM en `backend/app/services/ai.py`.
+- Navegación con React Navigation y pantallas de detalle de cita y feed.
 - Almacenamiento local con SQLite/WatermelonDB y sincronización con la API.
 - Exportación de Quote Cards con React Native View Shot.
-- Migraciones de base de datos (Alembic) antes de pasar a PostgreSQL.
+- Migraciones de base de datos con Alembic.
